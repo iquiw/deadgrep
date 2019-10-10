@@ -75,6 +75,13 @@ This affects the behaviour of `deadgrep--project-root', so this
 variable has no effect if you change
 `deadgrep-project-root-function'.")
 
+(defvar deadgrep--arguments-function #'deadgrep--arguments
+  "Function to generate ripgrep command line arguments.
+
+The function should take 4 arguments,
+search term, search type, case and context.
+And it should return a list of argument strings.")
+
 (defvar deadgrep-history
   nil
   "A list of the previous search terms.")
@@ -566,25 +573,25 @@ with a text face property `deadgrep-match-face'."
              (deadgrep--read-file-type deadgrep--initial-filename)))
         (setq deadgrep--file-type (cons 'type new-file-type))))
      ((eq button-type 'glob)
-      (let ((glob
-             (read-from-minibuffer
-              "Glob: "
-              (cond
-               ;; If we already have a glob pattern, edit it.
-               ((eq (car-safe deadgrep--file-type) 'glob)
-                (cdr deadgrep--file-type))
-               ;; If the initial file had a file name of the form
-               ;; foo.bar, offer *.bar as the initial glob.
-               ((and deadgrep--initial-filename
-                     (file-name-extension deadgrep--initial-filename))
-                (format "*.%s"
-                        (file-name-extension deadgrep--initial-filename)))
-               (t
-                "*")))))
+      (let ((glob (deadgrep--read-glob deadgrep--initial-filename)))
         (setq deadgrep--file-type (cons 'glob glob))))
      (t
       (error "Unknown button type: %S" button-type))))
   (deadgrep-restart))
+
+(defun deadgrep--read-glob (filename)
+  (read-from-minibuffer
+   "Glob: "
+   (cond
+    ;; If we already have a glob pattern, edit it.
+    ((eq (car-safe deadgrep--file-type) 'glob)
+     (cdr deadgrep--file-type))
+    ;; If the initial file had a file name of the form
+    ;; foo.bar, offer *.bar as the initial glob.
+    ((and filename (file-name-extension filename))
+     (format "*.%s" (file-name-extension filename)))
+    (t
+     "*"))))
 
 (define-button-type 'deadgrep-directory
   'action #'deadgrep--directory
@@ -1297,9 +1304,9 @@ matches (if the result line has been truncated)."
   (setq deadgrep--spinner (spinner-create 'progress-bar t))
   (setq deadgrep--running t)
   (spinner-start deadgrep--spinner)
-  (let* ((args (deadgrep--arguments
-                search-term search-type case
-                deadgrep--context))
+  (let* ((args (funcall deadgrep--arguments-function
+                        search-term search-type case
+                        deadgrep--context))
          (command (format "%s %s" deadgrep-executable (s-join " " args)))
          (process
           (apply #'start-file-process
