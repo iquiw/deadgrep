@@ -1,0 +1,13 @@
+* Transient Interface
+** Saved values
+To get saved transient values, do like
+
+#+BEGIN_SRC emacs-lisp
+(cdr (assoc 'deadgrep-transient transient-values))
+#+END_SRC
+
+** Adding new infix
+
+#+BEGIN_SRC emacs-lisp
+(transient-append-suffix 'deadgrep-transient "-g" '("=h" "Hidden" "--hidden"))
+#+END_SRC

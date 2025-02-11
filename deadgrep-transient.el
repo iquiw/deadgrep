@@ -76,9 +76,25 @@
   :key "-w"
   :argument "--word-regexp")
 
+(transient-define-argument deadgrep-transient:-- ()
+  :description "Limit to files"
+  :class 'transient-files
+  :key "--"
+  :argument "--"
+  :prompt "Limit to file(s): "
+  :reader 'deadgrep-transient-read-files
+  :multi-value t)
+
+;; Copied from `magit-read-files'.
+(defun deadgrep-transient-read-files (prompt initial-input history)
+  (magit-completing-read-multiple* prompt
+                                   (magit-list-files)
+                                   nil nil initial-input history))
+
+
 (define-transient-command deadgrep-transient ()
   "Start a ripgrep search"
-  ["Arguments"
+  ["Options"
    (deadgrep-transient:--fixed-strings)
    (deadgrep-transient:--word-regexp)
    (deadgrep-transient:--*-case)
@@ -86,6 +102,8 @@
    (deadgrep-transient:--after-context)
    (deadgrep-transient:--type)
    (deadgrep-transient:--glob)]
+  ["Arguments"
+   (deadgrep-transient:--)]
   ["Search"
    ("g" "Search in project root" deadgrep-transient-search)
    ("c" "Search in current directory" deadgrep-transient-search-in-current)])
